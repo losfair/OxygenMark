@@ -60,7 +60,10 @@ namespace SimpleMark {
             Node *nodes;
 
             Document(std::string& doc);
+            Document(const char *filename);
             ~Document();
+
+            void dumpToFile(const char *filename);
     };
 }
 

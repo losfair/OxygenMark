@@ -1,25 +1,20 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <exception>
 #include "Parser.h"
 
 using namespace std;
 using namespace SimpleMark;
 
-void search(Document& doc, int currentNodeId) {
-    Node& currentNode = doc.nodes[currentNodeId];
-    cout << "<" << currentNode.key << ">";
-    if(currentNode.content.type == fromString) {
-        cout << currentNode.content.ds;
-    }
-    for(auto& i : currentNode.children) {
-        search(doc, i);
-    }
-    cout << "</" << currentNode.key << ">";
+void compileAndDump(string origData, const char *filename) {
+    Document doc(origData);
+    doc.dumpToFile(filename);
+    cout << "Done. " << endl;
 }
 
 int main(int argc, char *argv[]) {
-    if(argc != 2) return 1;
+    if(argc != 3) return 1;
 
     ifstream inFile(argv[1], ios::in | ios::binary);
     if(!inFile.is_open()) return 2;
@@ -27,12 +22,11 @@ int main(int argc, char *argv[]) {
     char fileData[16385];
     inFile.read(fileData, 16384);
 
-    string fileDataStr = fileData;
-
-    Document doc(fileDataStr);
-
-    search(doc, 0);
-    cout << endl;
+    try {
+        compileAndDump((string) fileData, argv[2]);
+    } catch(runtime_error e) {
+        cout << "Error: " << e.what() << endl;
+    }
 
     return 0;
 }
