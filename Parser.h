@@ -1,11 +1,11 @@
-#ifndef _SIMPLEMARK_PARSER_H_
-#define _SIMPLEMARK_PARSER_H_
+#ifndef _OXYGENMARK_PARSER_H_
+#define _OXYGENMARK_PARSER_H_
 
 #include <string>
 #include <map>
 #include <list>
 
-namespace SimpleMark {
+namespace OxygenMark {
     enum TokenType {
         unknownTokenType,
         indentType,
@@ -58,6 +58,7 @@ namespace SimpleMark {
         public:
             size_t rowCount;
             Node *nodes;
+            std::map<std::string, std::string> params;
 
             Document(std::string& doc);
             Document(const char *filename);

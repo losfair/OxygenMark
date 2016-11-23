@@ -1,18 +1,18 @@
 CXXFLAGS := -fPIC -O2
 
 all:
-	make SimpleMark
-	make SimpleMark-Compiler
-	make SimpleMark-Renderer
+	make OxygenMark
+	make OxygenMark-Compiler
+	make OxygenMark-Renderer
 
-SimpleMark: Parser.o
-	$(CXX) -shared -o libSimpleMark.so Parser.o
+OxygenMark: Parser.o
+	$(CXX) -shared -o libOxygenMark.so Parser.o
 
-SimpleMark-Compiler: Compiler.o
-	$(CXX) -o Compiler Compiler.o -L. -lSimpleMark
+OxygenMark-Compiler: Compiler.o
+	$(CXX) -o Compiler Compiler.o -L. -lOxygenMark
 
-SimpleMark-Renderer: Renderer.o
-	$(CXX) -o Renderer Renderer.o -L. -lSimpleMark
+OxygenMark-Renderer: Renderer.o
+	$(CXX) -shared -o libOxygenMarkRenderer.so Renderer.o -L. -lOxygenMark
 
 clean:
 	rm *.o *.so Compiler Renderer

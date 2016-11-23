@@ -45,7 +45,7 @@ static void splitToRows(std::string doc, std::vector<std::string>& result) {
     }
 }
 
-namespace SimpleMark {
+namespace OxygenMark {
     static int parseRow(std::string& rawRow, Node *nodes, int currentNodeId, int parentNodeId, std::map<int, int>& nodeIndentCache) {
         Node& currentNode = nodes[currentNodeId];
         std::stringstream ss;

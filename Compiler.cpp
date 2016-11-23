@@ -5,7 +5,7 @@
 #include "Parser.h"
 
 using namespace std;
-using namespace SimpleMark;
+using namespace OxygenMark;
 
 void compileAndDump(string origData, const char *filename) {
     Document doc(origData);

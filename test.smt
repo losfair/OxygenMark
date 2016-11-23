@@ -3,5 +3,5 @@ head
 	script => file index.js
 body
 	div
-		p => param text1
-		a href=string "sss" => param text2
+		p @invisible=param isInvisible => param text1
+		a id=param text1 href=string "str" => param text2

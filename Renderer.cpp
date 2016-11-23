@@ -1,44 +1,85 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <sstream>
 #include <exception>
+#include <stdlib.h>
+#include <string.h>
 #include "Parser.h"
 
 using namespace std;
-using namespace SimpleMark;
+using namespace OxygenMark;
 
-void search(Document& doc, int currentNodeId) {
+static void search(Document& doc, int currentNodeId, stringstream& ss) {
     Node& currentNode = doc.nodes[currentNodeId];
 
-    cout << "<" << currentNode.key;
     for(auto& item : currentNode.properties) {
-        if(item.second.type == fromString) cout << " " << item.first << "=\"" << item.second.ds << "\"";
+        if(item.first == "@invisible") {
+            if(item.second.type == fromString && item.second.ds == "true") return;
+            if(item.second.type == fromParam) {
+                auto itr = doc.params.find(item.second.ds);
+                if(itr != doc.params.end()) {
+                    if(itr -> second == "true") return;
+                }
+            }
+        }
     }
-    cout << ">";
+
+    ss << "<" << currentNode.key;
+    for(auto& item : currentNode.properties) {
+        if(item.second.type == fromString) ss << " " << item.first << "=\"" << item.second.ds << "\"";
+        else if(item.second.type == fromParam) {
+            auto itr = doc.params.find(item.second.ds);
+            if(itr == doc.params.end()) continue;
+            ss << " " << item.first << "=\"" << itr -> second << "\"";
+        }
+    }
+    ss << ">";
 
     if(currentNode.content.type == fromString) {
-        cout << currentNode.content.ds;
+        ss << currentNode.content.ds;
+    } else if(currentNode.content.type == fromParam) {
+        auto itr = doc.params.find(currentNode.content.ds);
+        if(itr != doc.params.end()) ss << itr -> second;
     }
+
     for(auto& i : currentNode.children) {
-        search(doc, i);
+        search(doc, i, ss);
     }
-    cout << "</" << currentNode.key << ">";
+    ss << "</" << currentNode.key << ">";
 }
 
-void renderToHtml(const char *filename) {
-    Document doc(filename);
-    search(doc, 0);
-    cout << endl;
-}
-
-int main(int argc, char *argv[]) {
-    if(argc != 2) return 1;
-
+extern "C" Document * loadDocument(const char *filename) {
     try {
-        renderToHtml(argv[1]);
+        Document *newDoc = new Document(filename);
+        return newDoc;
     } catch(runtime_error e) {
-        cout << "Error: " << e.what() << endl;
+        return NULL;
     }
+    return NULL;
+}
 
-    return 0;
+extern "C" void destroyDocument(Document *doc) {
+    if(doc == NULL) return;
+    delete doc;
+}
+
+extern "C" void setDocumentParam(Document *doc, const char *key, const char *value) {
+    if(doc == NULL) return;
+    doc -> params[(string) key] = (string) value;
+}
+
+extern "C" char * renderToHtml(Document *doc) {
+    if(doc == NULL) return NULL;
+
+    stringstream ss;
+    search(*doc, 0, ss);
+    string result = ss.str();
+
+    char *result_c = new char [result.size() + 1];
+    result_c[result.size()] = 0;
+
+    strcpy(result_c, result.c_str());
+
+    return result_c;
 }
