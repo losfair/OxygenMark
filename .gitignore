@@ -1,4 +1,4 @@
 *.o
 *.so
-*.smc
+*.omc
 *.pyc
