@@ -19,14 +19,18 @@ int main(int argc, char *argv[]) {
     ifstream inFile(argv[1], ios::in | ios::binary);
     if(!inFile.is_open()) return 2;
 
-    char fileData[16385];
-    inFile.read(fileData, 16384);
+    char *fileData = new char [1048577];
+    inFile.read(fileData, 1048576);
+
+    fileData[1048576] = 0;
 
     try {
         compileAndDump((string) fileData, argv[2]);
     } catch(runtime_error e) {
         cout << "Error: " << e.what() << endl;
     }
+
+    delete[] fileData;
 
     return 0;
 }
