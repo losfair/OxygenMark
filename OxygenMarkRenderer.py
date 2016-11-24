@@ -25,5 +25,5 @@ def render_template(filename, params):
     except RuntimeError:
         html = ""
     
-    lib.destroyDocument(tpl);
-    return html.decode("utf-8")
+    lib.destroyDocument(tpl)
+    return html

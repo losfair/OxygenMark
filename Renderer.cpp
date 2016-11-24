@@ -11,6 +11,7 @@ using namespace std;
 using namespace OxygenMark;
 
 static void search(Document& doc, int currentNodeId, stringstream& ss) {
+    bool showTags = true;
     Node& currentNode = doc.nodes[currentNodeId];
 
     for(auto& item : currentNode.properties) {
@@ -25,17 +26,21 @@ static void search(Document& doc, int currentNodeId, stringstream& ss) {
         }
     }
 
-    ss << "<" << currentNode.key;
-    for(auto& item : currentNode.properties) {
-        if(!item.first.empty() && item.first[0] == '@') continue;
-        if(item.second.type == fromString) ss << " " << item.first << "=\"" << item.second.ds << "\"";
-        else if(item.second.type == fromParam) {
-            auto itr = doc.params.find(item.second.ds);
-            if(itr == doc.params.end()) continue;
-            ss << " " << item.first << "=\"" << itr -> second << "\"";
+    if(currentNode.key == "" || currentNode.key == "_") showTags = false;
+
+    if(showTags) {
+        ss << "<" << currentNode.key;
+        for(auto& item : currentNode.properties) {
+            if(!item.first.empty() && item.first[0] == '@') continue;
+            if(item.second.type == fromString) ss << " " << item.first << "=\"" << item.second.ds << "\"";
+            else if(item.second.type == fromParam) {
+                auto itr = doc.params.find(item.second.ds);
+                if(itr == doc.params.end()) continue;
+                ss << " " << item.first << "=\"" << itr -> second << "\"";
+            }
         }
+        ss << ">";
     }
-    ss << ">";
 
     if(currentNode.content.type == fromString) {
         ss << currentNode.content.ds;
@@ -47,7 +52,8 @@ static void search(Document& doc, int currentNodeId, stringstream& ss) {
     for(auto& i : currentNode.children) {
         search(doc, i, ss);
     }
-    ss << "</" << currentNode.key << ">";
+
+    if(showTags) ss << "</" << currentNode.key << ">";
 }
 
 extern "C" Document * loadDocument(const char *filename) {
@@ -74,6 +80,8 @@ extern "C" char * renderToHtml(Document *doc) {
     if(doc == NULL) return NULL;
 
     stringstream ss;
+    ss << "<!DOCTYPE html>";
+
     search(*doc, 0, ss);
     string result = ss.str();
 
