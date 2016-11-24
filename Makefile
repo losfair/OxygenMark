@@ -15,4 +15,4 @@ OxygenMark-Renderer: Renderer.o
 	$(CXX) -shared -o libOxygenMarkRenderer.so Renderer.o -L. -lOxygenMark
 
 clean:
-	rm *.o *.so Compiler Renderer
+	rm *.o *.so Compiler

@@ -13,9 +13,9 @@ void free(void *ptr);
 lib = ffi.dlopen("./libOxygenMarkRenderer.so")
 
 def render_template(filename, params):
-    tpl = lib.loadDocument(filename)
-    for k, v in params.iteritems():
-        lib.setDocumentParam(tpl, k, v)
+    tpl = lib.loadDocument(filename.encode("utf-8"))
+    for k in params.keys():
+        lib.setDocumentParam(tpl, k.encode("utf-8"), params[k].encode("utf-8"))
 
     html_c = lib.renderToHtml(tpl)
 
@@ -26,4 +26,4 @@ def render_template(filename, params):
         html = ""
     
     lib.destroyDocument(tpl);
-    return html
+    return html.decode("utf-8")

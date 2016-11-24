@@ -27,6 +27,7 @@ static void search(Document& doc, int currentNodeId, stringstream& ss) {
 
     ss << "<" << currentNode.key;
     for(auto& item : currentNode.properties) {
+        if(!item.first.empty() && item.first[0] == '@') continue;
         if(item.second.type == fromString) ss << " " << item.first << "=\"" << item.second.ds << "\"";
         else if(item.second.type == fromParam) {
             auto itr = doc.params.find(item.second.ds);
