@@ -76,13 +76,16 @@ extern "C" void setDocumentParam(Document *doc, const char *key, const char *val
     doc -> params[(string) key] = (string) value;
 }
 
-extern "C" char * renderToHtml(Document *doc) {
+extern "C" char * renderToHtml(Document *doc, bool isWholePage) {
     if(doc == NULL) return NULL;
 
     stringstream ss;
-    ss << "<!DOCTYPE html>";
+    if(isWholePage) ss << "<!DOCTYPE html><html>";
 
     search(*doc, 0, ss);
+
+    if(isWholePage) ss << "</html>";
+    
     string result = ss.str();
 
     char *result_c = new char [result.size() + 1];

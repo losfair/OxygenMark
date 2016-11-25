@@ -27,7 +27,16 @@ def on_render_request():
         return flask.Response("Invalid params");
     
     try:
-        result = OxygenMarkRenderer.render_template(tpl_path, tpl_params)
+        render_whole_page = req_data["is_whole_page"]
+        if render_whole_page == True:
+            is_whole_page = True
+        else:
+            is_whole_page = False
+    except KeyError:
+        is_whole_page = True
+    
+    try:
+        result = OxygenMarkRenderer.render_template(tpl_path, tpl_params, is_whole_page)
     except RuntimeError as e:
         return flask.Response("Exception caught while rendering: " + e.message)
     

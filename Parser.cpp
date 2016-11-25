@@ -181,7 +181,7 @@ namespace OxygenMark {
 
         nodes = new Node [rowCount + 1];
 
-        nodes[0].key = "html";
+        nodes[0].key = "";
 
         std::map<int, int> nodeIndentCache;
 

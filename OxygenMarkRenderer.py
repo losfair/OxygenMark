@@ -6,13 +6,13 @@ ffi.cdef('''
 void * loadDocument(const char *filename);
 void destroyDocument(void *doc);
 void setDocumentParam(void *doc, const char *key, const char *value);
-char * renderToHtml(void *doc);
+char * renderToHtml(void *doc, bool isWholePage);
 void free(void *ptr);
 ''')
 
 lib = ffi.dlopen("./libOxygenMarkRenderer.so")
 
-def render_template(filename, params):
+def render_template(filename, params, _is_whole_page = True):
     try:
         tpl = lib.loadDocument(filename.encode("utf-8"))
         for k in params.keys():
@@ -20,8 +20,13 @@ def render_template(filename, params):
     except:
         lib.destroyDocument(tpl)
         raise RuntimeError("Unable to load template")
-
-    html_c = lib.renderToHtml(tpl)
+    
+    if _is_whole_page == True:
+        is_whole_page = True
+    else:
+        is_whole_page = False
+    
+    html_c = lib.renderToHtml(tpl, is_whole_page)
 
     try:
         html = ffi.string(html_c)

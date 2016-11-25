@@ -1,6 +1,6 @@
 <?php
 
-function oxygenmark_render_template($template_path, $_params) {
+function oxygenmark_render_template($template_path, $_params, $is_whole_page = true) {
     if(!isset($_params) || count($_params) == 0) $params = array(
         "" => ""
     );
@@ -19,7 +19,8 @@ function oxygenmark_render_template($template_path, $_params) {
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(array(
         "type" => "template",
         "path" => $template_path,
-        "params" => $params
+        "params" => $params,
+        "is_whole_page" => $is_whole_page
     )));
 
     $result = curl_exec($ch);
