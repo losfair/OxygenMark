@@ -66,6 +66,17 @@ extern "C" Document * loadDocument(const char *filename) {
     return NULL;
 }
 
+extern "C" Document * loadDocumentFromSource(const char *src_c) {
+    try {
+        string src(src_c);
+        Document *newDoc = new Document(src);
+        return newDoc;
+    } catch(runtime_error e) {
+        return NULL;
+    }
+    return NULL;
+}
+
 extern "C" void destroyDocument(Document *doc) {
     if(doc == NULL) return;
     delete doc;
@@ -85,7 +96,7 @@ extern "C" char * renderToHtml(Document *doc, bool isWholePage) {
     search(*doc, 0, ss);
 
     if(isWholePage) ss << "</html>";
-    
+
     string result = ss.str();
 
     char *result_c = new char [result.size() + 1];
