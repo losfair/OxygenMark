@@ -1,4 +1,4 @@
-CXXFLAGS := -fPIC -O2
+CXXFLAGS := -fPIC -std=c++11 -O2
 
 all:
 	make OxygenMark
