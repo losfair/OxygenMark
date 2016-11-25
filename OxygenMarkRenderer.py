@@ -13,9 +13,13 @@ void free(void *ptr);
 lib = ffi.dlopen("./libOxygenMarkRenderer.so")
 
 def render_template(filename, params):
-    tpl = lib.loadDocument(filename.encode("utf-8"))
-    for k in params.keys():
-        lib.setDocumentParam(tpl, k.encode("utf-8"), params[k].encode("utf-8"))
+    try:
+        tpl = lib.loadDocument(filename.encode("utf-8"))
+        for k in params.keys():
+            lib.setDocumentParam(tpl, k.encode("utf-8"), params[k].encode("utf-8"))
+    except:
+        lib.destroyDocument(tpl)
+        raise RuntimeError("Unable to load template")
 
     html_c = lib.renderToHtml(tpl)
 
