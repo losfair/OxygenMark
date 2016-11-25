@@ -15,7 +15,9 @@ def on_render_request():
     if req_data["type"] != "template":
         return flask.Response("Data type not supported")
     
-    # We assume the service is running in a low privileged user and the request is made from localhost, so no path check is done.
+    # We assume the service is running in a low privileged user 
+    # and the request is made from localhost, so no path check is done.
+
     tpl_path = req_data["path"]
     if type(tpl_path) != str:
         return flask.Response("Invalid path");
@@ -26,8 +28,8 @@ def on_render_request():
     
     try:
         result = OxygenMarkRenderer.render_template(tpl_path, tpl_params)
-    except:
-        return flask.Response("Exception caught while rendering")
+    except RuntimeError as e:
+        return flask.Response("Exception caught while rendering: " + e.message)
     
     return flask.Response(result)
 
