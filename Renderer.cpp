@@ -23,6 +23,12 @@ static void search(Document& doc, int currentNodeId, stringstream& ss) {
                     if(itr -> second == "true") return;
                 }
             }
+        } else if(item.first == "@if") {
+            if(item.second.type == fromParam) {
+                auto itr = doc.params.find(item.second.ds);
+                if(itr == doc.params.end()) return;
+                if(itr -> second != "true") return;
+            }
         }
     }
 

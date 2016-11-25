@@ -111,6 +111,27 @@ namespace OxygenMark {
                 break;
             }
 
+            if(currentToken[0] == '#') {
+                currentPropertyValue = currentToken.substr(1);
+                currentNode.properties["id"] = DataSource(fromString, currentPropertyValue);
+                continue;
+            }
+
+            if(currentToken[0] == '.') {
+                currentPropertyValue = currentToken.substr(1);
+                auto itr = currentNode.properties.find("class");
+                if(itr == currentNode.properties.end()) {
+                    currentNode.properties["class"] = DataSource(fromString, currentPropertyValue);
+                } else {
+                    if(itr -> second.type != fromString) {
+                        throw std::runtime_error("A non-string type has been assigned to the 'class' property.");
+                    }
+                    itr -> second.ds += " ";
+                    itr -> second.ds += currentPropertyValue;
+                }
+                continue;
+            }
+
             pos = currentToken.find("=");
             if(pos == std::string::npos) throw std::runtime_error("Parse error");
 
