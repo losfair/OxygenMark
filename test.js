@@ -5,7 +5,7 @@ var loadDocumentFromSource = OxygenMark.cwrap("loadDocumentFromSource", "number"
 var setDocumentParam = OxygenMark.cwrap("setDocumentParam", null, ["number", "string", "string"]);
 var renderToHtml = OxygenMark.cwrap("renderToHtml", "string", ["number", "number"]);
 
-var tpl = fs.readFileSync("./sdk/php/server_info.omt", "utf-8");
+var tpl = fs.readFileSync("./test.omt", "utf-8");
 var doc = loadDocumentFromSource(tpl);
 var result = renderToHtml(doc, false);
 
