@@ -9,11 +9,10 @@ var destroyDocument = OxygenMark.cwrap("destroyDocument", null, ["number"]);
 var tpl = fs.readFileSync("./test.omt", "utf-8");
 
 var startTime = Date.now();
-for(var i = 0; i < 1000; i++) {
-    var doc = loadDocumentFromSource(tpl);
-    var result = renderToHtml(doc, false);
-    destroyDocument(doc);
-}
+var doc = loadDocumentFromSource(tpl);
+setDocumentParam(doc, "text1", "T1");
+var result = renderToHtml(doc, false);
+destroyDocument(doc);
 var endTime = Date.now();
 
 console.log(result);

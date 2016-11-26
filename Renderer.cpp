@@ -3,12 +3,28 @@
 #include <string>
 #include <sstream>
 #include <exception>
+#include <map>
 #include <stdlib.h>
 #include <string.h>
 #include "Parser.h"
 
 using namespace std;
 using namespace OxygenMark;
+
+map<string, bool> singleTags;
+bool moduleInitialized = false;
+
+static void tryModuleInit() {
+    if(moduleInitialized) return;
+    moduleInitialized = true;
+    singleTags["br"] = true;
+    singleTags["hr"] = true;
+    singleTags["img"] = true;
+    singleTags["input"] = true;
+    singleTags["param"] = true;
+    singleTags["meta"] = true;
+    singleTags["link"] = true;
+}
 
 static void search(Document& doc, int currentNodeId, stringstream& ss) {
     bool showTags = true;
@@ -34,6 +50,10 @@ static void search(Document& doc, int currentNodeId, stringstream& ss) {
 
     if(currentNode.key == "" || currentNode.key == "_") showTags = false;
 
+    bool isSingleTag = false;
+
+    if(singleTags.find(currentNode.key) != singleTags.end()) isSingleTag = true;
+
     if(showTags) {
         ss << "<" << currentNode.key;
         for(auto& item : currentNode.properties) {
@@ -45,24 +65,29 @@ static void search(Document& doc, int currentNodeId, stringstream& ss) {
                 ss << " " << item.first << "=\"" << itr -> second << "\"";
             }
         }
-        ss << ">";
+        if(isSingleTag) ss << " />";
+        else ss << ">";
     }
 
-    if(currentNode.content.type == fromString) {
-        ss << currentNode.content.ds;
-    } else if(currentNode.content.type == fromParam) {
-        auto itr = doc.params.find(currentNode.content.ds);
-        if(itr != doc.params.end()) ss << itr -> second;
+    if(!isSingleTag) {
+        if(currentNode.content.type == fromString) {
+            ss << currentNode.content.ds;
+        } else if(currentNode.content.type == fromParam) {
+            auto itr = doc.params.find(currentNode.content.ds);
+            if(itr != doc.params.end()) ss << itr -> second;
+        }
+
+        for(auto& i : currentNode.children) {
+            search(doc, i, ss);
+        }
     }
 
-    for(auto& i : currentNode.children) {
-        search(doc, i, ss);
-    }
-
-    if(showTags) ss << "</" << currentNode.key << ">";
+    if(!isSingleTag && showTags) ss << "</" << currentNode.key << ">";
 }
 
 extern "C" Document * loadDocument(const char *filename) {
+    tryModuleInit();
+
     try {
         Document *newDoc = new Document(filename);
         return newDoc;
@@ -73,6 +98,8 @@ extern "C" Document * loadDocument(const char *filename) {
 }
 
 extern "C" Document * loadDocumentFromSource(const char *src_c) {
+    tryModuleInit();
+
     try {
         string src(src_c);
         Document *newDoc = new Document(src);
