@@ -1,10 +1,9 @@
 head
-	title => string "Hello world"
-	script => file index.js
+	title => "Hello world"
 body
 	div
-		p .testclass1 .testclass2 @invisible=param isInvisible => param text1
-			strong => string "Test string 1"
-		a id=param text1 href=string "str" => param text2
+		p .testclass1 .testclass2 @invisible=[isInvisible] => [text1]
+			strong => "Test string 1"
+		a id=[text1] href="str" => [text2]
 		br
-		_ => string "Test string 2"
+		_ => "Test string 2"

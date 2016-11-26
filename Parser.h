@@ -6,33 +6,11 @@
 #include <list>
 
 namespace OxygenMark {
-    enum TokenType {
-        unknownTokenType,
-        indentType,
-        stringType,
-        delimiterType
-    };
-
     enum DataSourceType {
         unknownDataSourceType,
         fromString,
         fromFile,
         fromParam
-    };
-
-    enum Delimiter {
-        KEY_CONTENT_DELIMITER,
-        KEY_DATASRC_DELIMITER,
-        PROP_DATASRC_DELIMITER
-    };
-
-    class Token {
-        public:
-            int indentValue;
-            std::string stringValue;
-            Delimiter delimiterValue;
-            TokenType type;
-            Token();
     };
 
     class DataSource {
