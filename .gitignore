@@ -3,3 +3,4 @@
 *.omc
 *.pyc
 *.js.mem
+build/
