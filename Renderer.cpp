@@ -1,7 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <sstream>
+#include <list>
 #include <exception>
 #include <map>
 #include <stdlib.h>
@@ -26,7 +26,34 @@ static void tryModuleInit() {
     singleTags["link"] = true;
 }
 
-static void search(Document& doc, int currentNodeId, stringstream& ss) {
+class RenderedList {
+    public:
+        size_t totalLength;
+        list<string> elements;
+
+        RenderedList() {
+            totalLength = 0;
+        }
+        RenderedList& push(const string& s) {
+            totalLength += s.size();
+            elements.push_back(s);
+            return *this;
+        }
+        RenderedList& push(const char *s_c) {
+            string s(s_c);
+            return push(s);
+        }
+        string str() {
+            string ret;
+            ret.reserve(totalLength);
+            for(auto& item : elements) {
+                ret += item;
+            }
+            return ret;
+        }
+};
+
+static void search(Document& doc, int currentNodeId, RenderedList& rl) {
     bool showTags = true;
     Node& currentNode = doc.nodes[currentNodeId];
 
@@ -55,34 +82,36 @@ static void search(Document& doc, int currentNodeId, stringstream& ss) {
     if(singleTags.find(currentNode.key) != singleTags.end()) isSingleTag = true;
 
     if(showTags) {
-        ss << "<" << currentNode.key;
+        rl.push("<").push(currentNode.key);
         for(auto& item : currentNode.properties) {
             if(!item.first.empty() && item.first[0] == '@') continue;
-            if(item.second.type == fromString) ss << " " << item.first << "=\"" << item.second.ds << "\"";
+            if(item.second.type == fromString) {
+                rl.push(" ").push(item.first).push("=\"").push(item.second.ds).push("\"");
+            }
             else if(item.second.type == fromParam) {
                 auto itr = doc.params.find(item.second.ds);
                 if(itr == doc.params.end()) continue;
-                ss << " " << item.first << "=\"" << itr -> second << "\"";
+                rl.push(" ").push(item.first).push("=\"").push(itr -> second).push("\"");
             }
         }
-        if(isSingleTag) ss << " />";
-        else ss << ">";
+        if(isSingleTag) rl.push(" />");
+        else rl.push(">");
     }
 
     if(!isSingleTag) {
         if(currentNode.content.type == fromString) {
-            ss << currentNode.content.ds;
+            rl.push(currentNode.content.ds);
         } else if(currentNode.content.type == fromParam) {
             auto itr = doc.params.find(currentNode.content.ds);
-            if(itr != doc.params.end()) ss << itr -> second;
+            if(itr != doc.params.end()) rl.push(itr -> second);
         }
 
         for(auto& i : currentNode.children) {
-            search(doc, i, ss);
+            search(doc, i, rl);
         }
     }
 
-    if(!isSingleTag && showTags) ss << "</" << currentNode.key << ">";
+    if(!isSingleTag && showTags) rl.push("</").push(currentNode.key).push(">");
 }
 
 extern "C" Document * loadDocument(const char *filename) {
@@ -123,14 +152,14 @@ extern "C" void setDocumentParam(Document *doc, const char *key, const char *val
 extern "C" char * renderToHtml(Document *doc, bool isWholePage) {
     if(doc == NULL) return NULL;
 
-    stringstream ss;
-    if(isWholePage) ss << "<!DOCTYPE html><html>";
+    RenderedList rl;
+    if(isWholePage) rl.push("<!DOCTYPE html><html>");
 
-    search(*doc, 0, ss);
+    search(*doc, 0, rl);
 
-    if(isWholePage) ss << "</html>";
+    if(isWholePage) rl.push("</html>");
 
-    string result = ss.str();
+    string result = rl.str();
 
     char *result_c = new char [result.size() + 1];
     result_c[result.size()] = 0;
