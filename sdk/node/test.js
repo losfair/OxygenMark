@@ -1,18 +1,16 @@
-var fs = require("fs");
-var OxygenMark = require("./build/Release/OxygenMark");
+const OMRenderer = require("./OxygenMarkRenderer");
 
-var docContent = fs.readFileSync("./test.omt", "utf-8");
+const cxt = new OMRenderer();
 
 var startTime = Date.now();
-
-var doc = OxygenMark.loadDocumentFromSource(docContent);
 for(var i = 0; i < 10000; i++) {
-    OxygenMark.setDocumentParam(doc, "text1", i);
-    var result = OxygenMark.renderToHtml(doc, false);
+    cxt.loadCompiledFile("./test.omc", {
+        "text1": i
+    });
 }
-OxygenMark.destroyDocument(doc);
-
 var endTime = Date.now();
 
-console.log(result);
+console.log(cxt.render());
 console.log(endTime - startTime);
+
+cxt.destroy();

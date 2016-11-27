@@ -8,6 +8,7 @@ using namespace std;
 using namespace v8;
 
 extern "C" OxygenMark::Document * loadDocumentFromSource(const char *src_c);
+extern "C" OxygenMark::Document * loadDocument(const char *filename);
 extern "C" void setDocumentParam(OxygenMark::Document *doc, const char *key, const char *value);
 extern "C" char * renderToHtml(OxygenMark::Document *doc, bool isWholePage);
 extern "C" void destroyDocument(OxygenMark::Document *doc);
@@ -20,6 +21,23 @@ static void onLoadDocumentFromSource(const FunctionCallbackInfo<Value>& args) {
     if(args.Length() != 1) return;
 
     OxygenMark::Document *doc = loadDocumentFromSource(*String::Utf8Value(args[0] -> ToString()));
+    if(doc == NULL) {
+        isolate -> ThrowException(String::NewFromUtf8(isolate, "Unable to load document"));
+        return;
+    }
+
+    loadedDocuments[currentDocumentId] = doc;
+    Local<Number> docId = Number::New(isolate, currentDocumentId);
+    currentDocumentId++;
+
+    args.GetReturnValue().Set(docId);
+}
+
+static void onLoadDocumentFromBinaryFile(const FunctionCallbackInfo<Value>& args) {
+    Isolate *isolate = args.GetIsolate();
+    if(args.Length() != 1) return;
+
+    OxygenMark::Document *doc = loadDocument(*String::Utf8Value(args[0] -> ToString()));
     if(doc == NULL) {
         isolate -> ThrowException(String::NewFromUtf8(isolate, "Unable to load document"));
         return;
@@ -95,6 +113,7 @@ static void moduleInit(Local<Object> exports) {
     //Isolate *isolate = Isolate::GetCurrent();
 
     NODE_SET_METHOD(exports, "loadDocumentFromSource", onLoadDocumentFromSource);
+    NODE_SET_METHOD(exports, "loadDocumentFromBinaryFile", onLoadDocumentFromBinaryFile);
     NODE_SET_METHOD(exports, "setDocumentParam", onSetDocumentParam);
     NODE_SET_METHOD(exports, "renderToHtml", onRenderToHtml);
     NODE_SET_METHOD(exports, "destroyDocument", onDestroyDocument);
