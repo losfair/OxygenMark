@@ -1,8 +1,8 @@
 #include <node.h>
 #include <string>
 #include <map>
-#include "../../Parser.h"
-#include "../../Tokenizer.h"
+#include "Parser.h"
+#include "Tokenizer.h"
 
 using namespace std;
 using namespace v8;

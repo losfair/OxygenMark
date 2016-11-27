@@ -1,0 +1,33 @@
+{
+    "name": "oxygenmark",
+    "version": "1.0.0",
+    "description": "Another powerful HTML template engine",
+    "keywords": [
+        "oxygenmark",
+        "template",
+        "html",
+        "mark"
+    ],
+    "homepage": "https://github.com/losfair/OxygenMark",
+    "bugs": {
+        "url": "https://github.com/losfair/OxygenMark/issues",
+        "email": "i@ifxor.com"
+    },
+    "license": "LGPL-3.0",
+    "author": {
+        "name": "Heyang Zhou",
+        "email": "i@ifxor.com",
+        "url": "https:/www.ifxor.com/"
+    },
+    "files": [
+        "*.cpp",
+        "*.h",
+        "binding.gyp",
+        "OxygenMarkRenderer.js"
+    ],
+    "main": "OxygenMarkRenderer",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/losfair/OxygenMark.git"
+    }
+}
