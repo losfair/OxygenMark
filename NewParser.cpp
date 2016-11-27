@@ -14,38 +14,6 @@ static const unsigned int magic2 = 0xc92753be;
 static const unsigned int magic3 = 0xd83a7c05;
 static const unsigned int magic4 = 0xa79d12cf;
 
-static const char DEFAULT_INDENT_CHAR = '\t';
-static const char *DEFAULT_IGNORE_CHARS = "\t\r ";
-static std::string KEY_DATASRC_DELIMITER = "=>";
-
-static int countIndent(std::string& row, char indentChar) {
-    int i = 0;
-    int rowLength = row.size();
-
-    size_t pos = row.find_first_not_of(indentChar);
-    if(pos != std::string::npos) return pos;
-
-    return rowLength;
-}
-
-static int countIndent(std::string& row) {
-    return countIndent(row, DEFAULT_INDENT_CHAR);
-}
-
-static void splitToRows(std::string doc, std::vector<std::string>& result) {
-    size_t prevPos = 0;
-    size_t currentPos = 0;
-    std::string currentRow;
-
-    currentPos = doc.find('\n');
-    while(currentPos != std::string::npos) {
-        currentRow = doc.substr(prevPos, currentPos - prevPos);
-        if(currentRow.find_first_not_of(DEFAULT_IGNORE_CHARS) != std::string::npos) result.push_back(currentRow);
-        prevPos = currentPos + 1;
-        currentPos = doc.find('\n', currentPos + 1);
-    }
-}
-
 namespace OxygenMark {
     static int parseRow(Row& row, Node *nodes, int currentNodeId, int parentNodeId, std::map<int, int>& nodeIndentCache) {
         Node& currentNode = nodes[currentNodeId];

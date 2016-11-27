@@ -9,7 +9,6 @@ static const char *DEFAULT_IGNORE_CHARS = "\t\r ";
 static std::string KEY_DATASRC_DELIMITER = "=>";
 
 static int countIndent(std::string& row, char indentChar) {
-    int i = 0;
     int rowLength = row.size();
 
     size_t pos = row.find_first_not_of(indentChar);
