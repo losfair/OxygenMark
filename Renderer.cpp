@@ -26,34 +26,24 @@ static void tryModuleInit() {
     singleTags["link"] = true;
 }
 
-class RenderedList {
+class RenderedDocument {
     public:
-        size_t totalLength;
-        list<string> elements;
+        string content;
 
-        RenderedList() {
-            totalLength = 0;
-        }
-        RenderedList& push(const string& s) {
-            totalLength += s.size();
-            elements.push_back(s);
+        RenderedDocument& push(const string& s) {
+            content += s;
             return *this;
         }
-        RenderedList& push(const char *s_c) {
+        RenderedDocument& push(const char *s_c) {
             string s(s_c);
             return push(s);
         }
-        string str() {
-            string ret;
-            ret.reserve(totalLength);
-            for(auto& item : elements) {
-                ret += item;
-            }
-            return ret;
+        string& str() {
+            return content;
         }
 };
 
-static void search(Document& doc, int currentNodeId, RenderedList& rl) {
+static void search(Document& doc, int currentNodeId, RenderedDocument& rl) {
     bool showTags = true;
     Node& currentNode = doc.nodes[currentNodeId];
 
@@ -157,7 +147,7 @@ extern "C" void clearDocumentParams(Document *doc) {
 extern "C" char * renderToHtml(Document *doc, bool isWholePage) {
     if(doc == NULL) return NULL;
 
-    RenderedList rl;
+    RenderedDocument rl;
     if(isWholePage) rl.push("<!DOCTYPE html><html>");
 
     search(*doc, 0, rl);

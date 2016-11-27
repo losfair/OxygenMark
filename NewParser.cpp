@@ -170,7 +170,10 @@ namespace OxygenMark {
         int nodeCount;
         inFile.read((char *) &nodeCount, sizeof(int));
 
-        if(nodeCount <= 0) throw std::runtime_error("Incorrect node count");
+        if(nodeCount < 1) throw std::runtime_error("Incorrect node count");
+
+        rowCount = nodeCount - 1;
+        
         nodes = new Node [nodeCount];
 
         for(int i = 0; i < nodeCount; i++) {
