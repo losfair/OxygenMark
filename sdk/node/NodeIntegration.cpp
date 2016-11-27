@@ -10,6 +10,7 @@ using namespace v8;
 extern "C" OxygenMark::Document * loadDocumentFromSource(const char *src_c);
 extern "C" OxygenMark::Document * loadDocument(const char *filename);
 extern "C" void setDocumentParam(OxygenMark::Document *doc, const char *key, const char *value);
+extern "C" void clearDocumentParams(OxygenMark::Document *doc);
 extern "C" char * renderToHtml(OxygenMark::Document *doc, bool isWholePage);
 extern "C" void destroyDocument(OxygenMark::Document *doc);
 
@@ -64,6 +65,20 @@ static void onSetDocumentParam(const FunctionCallbackInfo<Value>& args) {
     setDocumentParam(doc, *String::Utf8Value(args[1] -> ToString()), *String::Utf8Value(args[2] -> ToString()));
 }
 
+static void onClearDocumentParams(const FunctionCallbackInfo<Value>& args) {
+    Isolate *isolate = args.GetIsolate();
+    if(args.Length() != 1) return;
+
+    auto itr = loadedDocuments.find((int) args[0] -> NumberValue());
+    if(itr == loadedDocuments.end()) {
+        isolate -> ThrowException(String::NewFromUtf8(isolate, "Unable to find target document"));
+        return;
+    }
+
+    OxygenMark::Document *doc = itr -> second;
+    clearDocumentParams(doc);
+}
+
 static void onRenderToHtml(const FunctionCallbackInfo<Value>& args) {
     Isolate *isolate = args.GetIsolate();
     if(args.Length() < 1) return;
@@ -115,6 +130,7 @@ static void moduleInit(Local<Object> exports) {
     NODE_SET_METHOD(exports, "loadDocumentFromSource", onLoadDocumentFromSource);
     NODE_SET_METHOD(exports, "loadDocumentFromBinaryFile", onLoadDocumentFromBinaryFile);
     NODE_SET_METHOD(exports, "setDocumentParam", onSetDocumentParam);
+    NODE_SET_METHOD(exports, "clearDocumentParams", onClearDocumentParams);
     NODE_SET_METHOD(exports, "renderToHtml", onRenderToHtml);
     NODE_SET_METHOD(exports, "destroyDocument", onDestroyDocument);
 }

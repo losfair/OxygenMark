@@ -2,15 +2,10 @@ const OMRenderer = require("./OxygenMarkRenderer");
 
 const cxt = new OMRenderer();
 
-var startTime = Date.now();
-for(var i = 0; i < 10000; i++) {
-    cxt.loadCompiledFile("../../test.omc", {
-        "text1": i
-    });
-}
-var endTime = Date.now();
-
+cxt.loadCompiledFile("../../test.omc", {
+    "text1": "Hello node"
+});
 console.log(cxt.render());
-console.log(endTime - startTime);
-
+cxt.clearParams();
+console.log(cxt.render());
 cxt.destroy();

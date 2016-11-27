@@ -149,6 +149,11 @@ extern "C" void setDocumentParam(Document *doc, const char *key, const char *val
     doc -> params[(string) key] = (string) value;
 }
 
+extern "C" void clearDocumentParams(Document *doc) {
+    if(doc == NULL) return;
+    doc -> params.clear();
+}
+
 extern "C" char * renderToHtml(Document *doc, bool isWholePage) {
     if(doc == NULL) return NULL;
 

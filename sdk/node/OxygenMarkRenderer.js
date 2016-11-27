@@ -30,6 +30,12 @@ function OxygenMarkRenderer() {
             this.setParams(params);
         }
     }
+    this.clearParams = () => {
+        if(!this.docContext) {
+            throw "Not initialized";
+        }
+        OxygenMark.clearDocumentParams(this.docContext);
+    }
     this.destroy = () => {
         if(!this.docContext) return;
         OxygenMark.destroyDocument(this.docContext);
