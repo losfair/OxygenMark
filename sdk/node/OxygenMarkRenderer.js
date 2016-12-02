@@ -47,11 +47,14 @@ function OxygenMarkRenderer() {
         }
         return OxygenMark.renderToHtml(this.docContext, isWholePage);
     }
-    this.prepare = (isWholePage = true) => {
+    this.prepareRaw = (isWholePage = true) => {
         if(!this.docContext) {
             throw "Not initialized";
         }
-        var generated = OxygenMark.generateRenderer(this.docContext, isWholePage);
+        return OxygenMark.generateRenderer(this.docContext, isWholePage);
+    }
+    this.prepare = (isWholePage = true) => {
+        var generated = this.prepareRaw(isWholePage);
         if(!generated) return null;
         eval("var renderer = " + generated);
         return renderer;

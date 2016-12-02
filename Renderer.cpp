@@ -104,6 +104,24 @@ static void walkToHtml(Document& doc, int currentNodeId, RenderedDocument& rl) {
     if(!isSingleTag && showTags) rl.push("</").push(currentNode.key).push(">");
 }
 
+static string escapeString(const string& str) {
+    string result;
+    for(char ch : str) {
+        if(ch == '\"'
+        || ch == '\''
+        || ch == '\\') {
+            result += '\\';
+        }
+        result += ch;
+    }
+    return result;
+}
+
+/*static string escapeString(const char *str) {
+    string s(str);
+    return escapeString(s);
+}*/
+
 static void walkToJavascript(Document& doc, int currentNodeId, RenderedDocument& rl) {
     bool showTags = true;
     Node& currentNode = doc.nodes[currentNodeId];
@@ -139,30 +157,30 @@ static void walkToJavascript(Document& doc, int currentNodeId, RenderedDocument&
             if(!item.first.empty() && item.first[0] == '@') continue;
             if(item.second.type == fromString) {
                 rl.push("pr[\"")
-                .push(item.first)
+                .push(escapeString(item.first))
                 .push("\"]=\"")
-                .push(item.second.ds)
+                .push(escapeString(item.second.ds))
                 .push("\";");
             }
             else if(item.second.type == fromParam) {
                 rl.push("pr[\"")
-                .push(item.first)
+                .push(escapeString(item.first))
                 .push("\"]=");
 
                 auto itr = doc.params.find(item.second.ds);
                 if(itr == doc.params.end()) {
                     rl.push("p[\"")
-                    .push(item.first)
+                    .push(escapeString(item.first))
                     .push("\"];");
                     continue;
                 }
                 rl.push("\"")
-                .push(itr -> second)
+                .push(escapeString(itr -> second))
                 .push("\";");
             }
         }
 
-        rl.push("r+=\"<").push(currentNode.key).push("\";")
+        rl.push("r+=\"<").push(escapeString(currentNode.key)).push("\";")
         .push("for(var key in pr)if(pr[key])r+=\" \"+key+\"=\"+\"\\\"\"+pr[key]+\"\\\"\";");
 
         if(isSingleTag) rl.push("r+=\" />\";");
@@ -171,12 +189,16 @@ static void walkToJavascript(Document& doc, int currentNodeId, RenderedDocument&
 
     if(!isSingleTag) {
         if(currentNode.content.type == fromString) {
-            rl.push("r+=\"" + currentNode.content.ds + "\";");
+            rl.push("r+=\"").push(escapeString(currentNode.content.ds)).push("\";");
         } else if(currentNode.content.type == fromParam) {
             auto itr = doc.params.find(currentNode.content.ds);
-            if(itr != doc.params.end()) rl.push("r+=\"" + itr -> second + "\";");
-            else rl.push("var v=p[\"" + currentNode.content.ds + "\"];")
-            .push("if(v)r+=v;");
+            if(itr != doc.params.end()) rl.push("r+=\"").push(escapeString(itr -> second)).push("\";");
+            else {
+                rl.push("var v=p[\"")
+                .push(escapeString(currentNode.content.ds))
+                .push("\"];")
+                .push("if(v)r+=v;");
+            }
         }
 
         for(auto& i : currentNode.children) {
@@ -184,7 +206,7 @@ static void walkToJavascript(Document& doc, int currentNodeId, RenderedDocument&
         }
     }
 
-    if(!isSingleTag && showTags) rl.push("r+=\"</").push(currentNode.key).push(">\";");
+    if(!isSingleTag && showTags) rl.push("r+=\"</").push(escapeString(currentNode.key)).push(">\";");
 }
 
 extern "C" Document * loadDocument(const char *filename) {
