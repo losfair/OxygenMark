@@ -43,7 +43,7 @@ class RenderedDocument {
         }
 };
 
-static void search(Document& doc, int currentNodeId, RenderedDocument& rl) {
+static void walkToHtml(Document& doc, int currentNodeId, RenderedDocument& rl) {
     bool showTags = true;
     Node& currentNode = doc.nodes[currentNodeId];
 
@@ -97,11 +97,94 @@ static void search(Document& doc, int currentNodeId, RenderedDocument& rl) {
         }
 
         for(auto& i : currentNode.children) {
-            search(doc, i, rl);
+            walkToHtml(doc, i, rl);
         }
     }
 
     if(!isSingleTag && showTags) rl.push("</").push(currentNode.key).push(">");
+}
+
+static void walkToJavascript(Document& doc, int currentNodeId, RenderedDocument& rl) {
+    bool showTags = true;
+    Node& currentNode = doc.nodes[currentNodeId];
+
+    for(auto& item : currentNode.properties) {
+        if(item.first == "@invisible") {
+            if(item.second.type == fromString && item.second.ds == "true") return;
+            if(item.second.type == fromParam) {
+                auto itr = doc.params.find(item.second.ds);
+                if(itr != doc.params.end()) {
+                    if(itr -> second == "true") return;
+                }
+            }
+        } else if(item.first == "@if") {
+            if(item.second.type == fromParam) {
+                auto itr = doc.params.find(item.second.ds);
+                if(itr == doc.params.end()) return;
+                if(itr -> second != "true") return;
+            }
+        }
+    }
+
+    if(currentNode.key == "" || currentNode.key == "_") showTags = false;
+
+    bool isSingleTag = false;
+
+    if(singleTags.find(currentNode.key) != singleTags.end()) isSingleTag = true;
+
+    if(showTags) {
+        rl.push("var pr={};");
+
+        for(auto& item : currentNode.properties) {
+            if(!item.first.empty() && item.first[0] == '@') continue;
+            if(item.second.type == fromString) {
+                rl.push("pr[\"")
+                .push(item.first)
+                .push("\"]=\"")
+                .push(item.second.ds)
+                .push("\";");
+            }
+            else if(item.second.type == fromParam) {
+                rl.push("pr[\"")
+                .push(item.first)
+                .push("\"]=");
+
+                auto itr = doc.params.find(item.second.ds);
+                if(itr == doc.params.end()) {
+                    rl.push("p[\"")
+                    .push(item.first)
+                    .push("\"];");
+                    continue;
+                }
+                rl.push("\"")
+                .push(itr -> second)
+                .push("\";");
+            }
+        }
+
+        rl.push("r+=\"<").push(currentNode.key).push("\";")
+        .push("for(var key in pr)if(pr[key])r+=\" \"+key+\"=\"+\"\\\"\"+pr[key]+\"\\\"\";");
+
+        if(isSingleTag) rl.push("r+=\" />\";");
+        else rl.push("r+=\">\";");
+    }
+
+    if(!isSingleTag) {
+        if(currentNode.content.type == fromString) {
+            rl.push("r+=\"" + currentNode.content.ds + "\";");
+        } else if(currentNode.content.type == fromParam) {
+            auto itr = doc.params.find(currentNode.content.ds);
+            if(itr != doc.params.end()) rl.push("r+=\"" + itr -> second + "\";");
+            else rl.push("var v=p[\"" + currentNode.content.ds + "\"];")
+            .push("if(v)r+=v;");
+        }
+
+        for(auto& i : currentNode.children) {
+            walkToJavascript(doc, i, rl);
+        }
+    }
+
+    if(!isSingleTag && showTags) rl.push("r+=\"</").push(currentNode.key).push(">\";");
 }
 
 extern "C" Document * loadDocument(const char *filename) {
@@ -150,9 +233,32 @@ extern "C" char * renderToHtml(Document *doc, bool isWholePage) {
     RenderedDocument rl;
     if(isWholePage) rl.push("<!DOCTYPE html><html>");
 
-    search(*doc, 0, rl);
+    walkToHtml(*doc, 0, rl);
 
     if(isWholePage) rl.push("</html>");
+
+    string result = rl.str();
+
+    char *result_c = new char [result.size() + 1];
+    result_c[result.size()] = 0;
+
+    strcpy(result_c, result.c_str());
+
+    return result_c;
+}
+
+extern "C" char * generateJavascriptRenderer(Document *doc, bool isWholePage) {
+    if(doc == NULL) return NULL;
+
+    RenderedDocument rl;
+    rl.push("function(p){")
+    .push("var r=\"\";")
+    .push("if(!p)p={};");
+
+    walkToJavascript(*doc, 0, rl);
+
+    rl.push("return r;")
+    .push("}");
 
     string result = rl.str();
 

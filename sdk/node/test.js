@@ -7,5 +7,5 @@ cxt.loadCompiledFile("../../test.omc", {
 });
 console.log(cxt.render());
 cxt.clearParams();
-console.log(cxt.render());
+console.log(cxt.prepare());
 cxt.destroy();

@@ -15,7 +15,7 @@ OxygenMark-Renderer: Renderer.o
 	$(CXX) -shared -o libOxygenMarkRenderer.so Renderer.o -L. -lOxygenMark
 
 OxygenMark-Bundle-Emscripten:
-	em++ -std=c++11 -O3 -o OxygenMarkBundle.js Tokenizer.cpp NewParser.cpp Renderer.cpp -s "EXPORTED_FUNCTIONS=['_loadDocumentFromSource', '_setDocumentParam', '_clearDocumentParams', '_renderToHtml', '_destroyDocument']" -s "DISABLE_EXCEPTION_CATCHING=0"
+	em++ -std=c++11 -O3 -o OxygenMarkBundle.js Tokenizer.cpp NewParser.cpp Renderer.cpp -s "EXPORTED_FUNCTIONS=['_loadDocumentFromSource', '_setDocumentParam', '_clearDocumentParams', '_renderToHtml', '_generateJavascriptRenderer', '_destroyDocument']" -s "DISABLE_EXCEPTION_CATCHING=0"
 	uglifyjs -o OxygenMarkBundle.min.js OxygenMarkBundle.js
 	rm OxygenMarkBundle.js
 

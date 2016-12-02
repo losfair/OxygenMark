@@ -47,6 +47,12 @@ function OxygenMarkRenderer() {
         }
         return OxygenMark.renderToHtml(this.docContext, isWholePage);
     }
+    this.prepare = (isWholePage = true) => {
+        if(!this.docContext) {
+            throw "Not initialized";
+        }
+        return OxygenMark.generateRenderer(this.docContext, isWholePage);
+    }
 }
 
 module.exports = OxygenMarkRenderer;
