@@ -51,7 +51,10 @@ function OxygenMarkRenderer() {
         if(!this.docContext) {
             throw "Not initialized";
         }
-        return OxygenMark.generateRenderer(this.docContext, isWholePage);
+        var generated = OxygenMark.generateRenderer(this.docContext, isWholePage);
+        if(!generated) return null;
+        eval("var renderer = " + generated);
+        return renderer;
     }
 }
 
