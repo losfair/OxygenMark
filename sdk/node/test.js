@@ -2,7 +2,7 @@ const OMRenderer = require("./OxygenMarkRenderer");
 
 const cxt = new OMRenderer();
 
-cxt.loadCompiledFile("../../test.omc", {
+cxt.loadFile("../../test.omt", {
     "text1": "Hello node"
 });
 console.log(cxt.render());
