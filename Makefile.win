@@ -1,0 +1,15 @@
+CXX := i686-w64-mingw32-g++
+CXXFLAGS := -std=c++11 -O2
+
+all:
+	make -f Makefile.win OxygenMark
+	make -f Makefile.win OxygenMark-Compiler
+
+OxygenMark: Tokenizer.o NewParser.o Renderer.o
+	$(CXX) -shared --static -o libOxygenMark.dll Tokenizer.o NewParser.o Renderer.o
+
+OxygenMark-Compiler: Compiler.o
+	$(CXX) --static -o Compiler.exe Compiler.o -L. -lOxygenMark
+
+clean:
+	rm *.exe *.dll *.o *.so *.js.mem Compiler OxygenMarkBundle.min.js

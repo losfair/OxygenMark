@@ -4,4 +4,5 @@
 *.pyc
 *.js.mem
 *.log
+*.dll
 build/
