@@ -170,7 +170,7 @@ static void walkToJavascript(Document& doc, int currentNodeId, RenderedDocument&
                 auto itr = doc.params.find(item.second.ds);
                 if(itr == doc.params.end()) {
                     rl.push("p[\"")
-                    .push(escapeString(item.first))
+                    .push(escapeString(item.second.ds))
                     .push("\"];");
                     continue;
                 }
