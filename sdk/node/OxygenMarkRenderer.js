@@ -41,19 +41,22 @@ function OxygenMarkRenderer() {
         OxygenMark.destroyDocument(this.docContext);
         this.docContext = null;
     }
-    this.render = (isWholePage = true) => {
+    this.render = (isWholePage) => {
+        if(isWholePage === undefined) isWholePage = true;
         if(!this.docContext) {
             throw "Not initialized";
         }
         return OxygenMark.renderToHtml(this.docContext, isWholePage);
     }
-    this.prepareRaw = (isWholePage = true) => {
+    this.prepareRaw = (isWholePage) => {
+        if(isWholePage === undefined) isWholePage = true;
         if(!this.docContext) {
             throw "Not initialized";
         }
         return OxygenMark.generateRenderer(this.docContext, isWholePage);
     }
-    this.prepare = (isWholePage = true) => {
+    this.prepare = (isWholePage) => {
+        if(isWholePage === undefined) isWholePage = true;
         var generated = this.prepareRaw(isWholePage);
         if(!generated) return null;
         eval("var renderer = " + generated);
