@@ -38,8 +38,9 @@ namespace OxygenMark {
             Node *nodes;
             std::map<std::string, std::string> params;
 
-            Document(std::string& doc);
-            Document(const char *filename);
+            Document(std::string& doc); // from string
+            Document(const char *filename); // from file
+            Document(Document& from) noexcept; // copy from another Document object
             ~Document();
 
             void dumpToFile(const char *filename);

@@ -14,6 +14,7 @@ extern "C" void clearDocumentParams(OxygenMark::Document *doc);
 extern "C" char * renderToHtml(OxygenMark::Document *doc, bool isWholePage);
 extern "C" char * generateJavascriptRenderer(OxygenMark::Document *doc, bool isWholePage);
 extern "C" void destroyDocument(OxygenMark::Document *doc);
+extern "C" const char * getLastError();
 
 map<int, OxygenMark::Document *> loadedDocuments;
 int currentDocumentId = 1;
@@ -24,7 +25,7 @@ static void onLoadDocumentFromSource(const FunctionCallbackInfo<Value>& args) {
 
     OxygenMark::Document *doc = loadDocumentFromSource(*String::Utf8Value(args[0] -> ToString()));
     if(doc == NULL) {
-        isolate -> ThrowException(String::NewFromUtf8(isolate, "Unable to load document"));
+        isolate -> ThrowException(String::NewFromUtf8(isolate, getLastError()));
         return;
     }
 
@@ -41,7 +42,7 @@ static void onLoadDocumentFromBinaryFile(const FunctionCallbackInfo<Value>& args
 
     OxygenMark::Document *doc = loadDocument(*String::Utf8Value(args[0] -> ToString()));
     if(doc == NULL) {
-        isolate -> ThrowException(String::NewFromUtf8(isolate, "Unable to load document"));
+        isolate -> ThrowException(String::NewFromUtf8(isolate, getLastError()));
         return;
     }
 

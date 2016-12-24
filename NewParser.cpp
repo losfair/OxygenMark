@@ -133,6 +133,8 @@ namespace OxygenMark {
     }
 
     Document::Document(std::string& doc) {
+        nodes = NULL;
+
         int pos = 1, parentNodeId = 0;
 
         Tokenizer docTokenizer(doc);
@@ -153,6 +155,8 @@ namespace OxygenMark {
     }
 
     Document::Document(const char *filename) {
+        nodes = NULL;
+
         std::ifstream inFile(filename, std::ios::binary);
         if(!inFile.is_open()) {
             throw std::runtime_error("Unable to open input file");
@@ -244,6 +248,13 @@ namespace OxygenMark {
         }
 
         inFile.close();
+    }
+
+    Document::Document(Document& from) noexcept {
+        //std::cout << "[DEBUG] Copying Document object" << std::endl;
+        rowCount = from.rowCount;
+        nodes = from.nodes;
+        params = from.params;
     }
 
     Document::~Document() {

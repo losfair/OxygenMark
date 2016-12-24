@@ -11,6 +11,7 @@
 using namespace std;
 using namespace OxygenMark;
 
+std::string lastError;
 map<string, bool> singleTags;
 bool moduleInitialized = false;
 
@@ -213,9 +214,13 @@ extern "C" Document * loadDocument(const char *filename) {
     tryModuleInit();
 
     try {
-        Document *newDoc = new Document(filename);
-        return newDoc;
-    } catch(runtime_error e) {
+        Document newDoc(filename);
+        Document *newDocPtr = new Document(newDoc);
+        lastError = "";
+        newDoc.nodes = NULL; // prevent nodes from being deleted
+        return newDocPtr;
+    } catch(runtime_error& e) {
+        lastError = e.what();
         return NULL;
     }
     return NULL;
@@ -226,12 +231,20 @@ extern "C" Document * loadDocumentFromSource(const char *src_c) {
 
     try {
         string src(src_c);
-        Document *newDoc = new Document(src);
-        return newDoc;
-    } catch(runtime_error e) {
+        Document newDoc(src);
+        Document *newDocPtr = new Document(newDoc);
+        lastError = "";
+        newDoc.nodes = NULL; // prevent nodes from being deleted
+        return newDocPtr;
+    } catch(runtime_error& e) {
+        lastError = e.what();
         return NULL;
     }
     return NULL;
+}
+
+extern "C" const char * getLastError() {
+    return lastError.c_str();
 }
 
 extern "C" void destroyDocument(Document *doc) {
