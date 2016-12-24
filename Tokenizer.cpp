@@ -48,6 +48,7 @@ static inline bool isValidIdentifierChar(char ch) {
     || charIsInRange(ch, '0', '9')
     || ch == '-'
     || ch == '_'
+    || ch == ':'
     || ch == '.'
     || ch == '#'
     || ch == '@') {
@@ -58,7 +59,8 @@ static inline bool isValidIdentifierChar(char ch) {
 
 static inline bool isSpaceLikeChar(char ch) {
     if(ch == ' '
-    || ch == '\t') {
+    || ch == '\t'
+    || ch == '\r') {
         return true;
     }
     return false;
