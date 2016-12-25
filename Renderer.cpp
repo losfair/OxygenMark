@@ -108,6 +108,11 @@ static void walkToHtml(Document& doc, int currentNodeId, RenderedDocument& rl) {
 static string escapeString(const string& str) {
     string result;
     for(char ch : str) {
+        if(ch == '\r') continue;
+        if(ch == '\n') {
+            result += "\\n";
+            continue;
+        }
         if(ch == '\"'
         || ch == '\''
         || ch == '\\') {
