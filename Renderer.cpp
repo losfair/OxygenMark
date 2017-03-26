@@ -11,6 +11,183 @@
 using namespace std;
 using namespace OxygenMark;
 
+enum OpType {
+    OP_TYPE_UNKNOWN,
+    OP_TYPE_APPEND_STRING,
+    OP_TYPE_APPEND_PARAM,
+    OP_TYPE_APPEND_PROPERTY_FROM_STRING,
+    OP_TYPE_APPEND_PROPERTY_FROM_PARAM
+};
+
+static string escapeString(const string& str) {
+    string result;
+    for(char ch : str) {
+        if(ch == '\r') continue;
+        if(ch == '\n') {
+            result += "\\n";
+            continue;
+        }
+        if(ch == '\"'
+        || ch == '\''
+        || ch == '\\') {
+            result += '\\';
+        }
+        result += ch;
+    }
+    return result;
+}
+
+struct RenderFlow_Operation {
+    OpType type;
+    string value1, value2;
+    RenderFlow_Operation() {
+        type = OP_TYPE_UNKNOWN;
+    }
+    RenderFlow_Operation(OpType _type, const string& _value1) {
+        type = _type;
+        value1 = _value1;
+    }
+    RenderFlow_Operation(OpType _type, const string& _value1, const string& _value2) {
+        type = _type;
+        value1 = _value1;
+        value2 = _value2;
+    }
+};
+
+class RenderFlow {
+    public:
+        list<RenderFlow_Operation> ops;
+
+        void appendString(const string& s) {
+            ops.push_back(RenderFlow_Operation(OP_TYPE_APPEND_STRING, s));
+        }
+
+        void appendParam(const string& k) {
+            ops.push_back(RenderFlow_Operation(OP_TYPE_APPEND_PARAM, k));
+        }
+
+        void appendPropertyFromString(const string& propertyName, const string& s) {
+            ops.push_back(RenderFlow_Operation(OP_TYPE_APPEND_PROPERTY_FROM_STRING, propertyName, s));
+        }
+
+        void appendPropertyFromParam(const string& propertyName, const string& k) {
+            ops.push_back(RenderFlow_Operation(OP_TYPE_APPEND_PROPERTY_FROM_PARAM, propertyName, k));
+        }
+
+        void optimize() {
+            list<RenderFlow_Operation> optimizedOps;
+            bool wasAppendString = false;
+            string prevString;
+
+            ops.push_back(RenderFlow_Operation());
+
+            for(auto& op : ops) {
+                if(op.type == OP_TYPE_APPEND_PROPERTY_FROM_STRING) {
+                    string buf;
+                    buf = " ";
+                    buf += op.value1;
+                    buf += "=\"";
+                    buf += escapeString(op.value2);
+                    buf += "\"";
+                    optimizedOps.push_back(RenderFlow_Operation(OP_TYPE_APPEND_STRING, buf));
+                } else {
+                    optimizedOps.push_back(op);
+                }
+            }
+
+            ops = optimizedOps;
+            optimizedOps.clear();
+            
+            for(auto& op : ops) {
+                if(wasAppendString && op.type != OP_TYPE_APPEND_STRING) {
+                    wasAppendString = false;
+                    optimizedOps.push_back(RenderFlow_Operation(OP_TYPE_APPEND_STRING, prevString));
+                    prevString = "";
+                }
+                if(op.type == OP_TYPE_APPEND_STRING) {
+                    wasAppendString = true;
+                    prevString += op.value1;
+                } else {
+                    optimizedOps.push_back(op);
+                }
+            }
+
+            ops = optimizedOps;
+            optimizedOps.clear();
+
+            for(auto& op : ops) {
+                if(op.type == OP_TYPE_UNKNOWN) {
+                } else {
+                    optimizedOps.push_back(op);
+                }
+            }
+
+            ops = optimizedOps;
+        }
+
+        string generateHTML() {
+            string ret;
+            for(auto& op : ops) {
+                switch(op.type) {
+                    case OP_TYPE_APPEND_STRING:
+                        ret += op.value1;
+                        break;
+                    case OP_TYPE_APPEND_PROPERTY_FROM_STRING:
+                        ret += " ";
+                        ret += op.value1;
+                        ret += "=\"";
+                        ret += escapeString(op.value2);
+                        ret += "\"";
+                        break;
+                    case OP_TYPE_APPEND_PARAM:
+                    case OP_TYPE_APPEND_PROPERTY_FROM_PARAM:
+                    default:
+                        break;
+                }
+            }
+            return ret;
+        }
+
+        string generateScript() {
+            string ret;
+            ret = "function(p){var r=\"\";if(!p)p={};";
+            for(auto& op : ops) {
+                switch(op.type) {
+                    case OP_TYPE_APPEND_STRING:
+                        ret += "r+=\"";
+                        ret += escapeString(op.value1);
+                        ret += "\";";
+                        break;
+                    case OP_TYPE_APPEND_PARAM:
+                        ret += "var v=p[\"";
+                        ret += escapeString(op.value1);
+                        ret += "\"];";
+                        ret += "if(v)r+=v;";
+                        break;
+                    case OP_TYPE_APPEND_PROPERTY_FROM_STRING:
+                        ret += "r+=\" ";
+                        ret += escapeString(op.value1);
+                        ret += "=\\\"";
+                        ret += escapeString(op.value2);
+                        ret += "\\\"\";";
+                        break;
+                    case OP_TYPE_APPEND_PROPERTY_FROM_PARAM:
+                        ret += "var v=p[\"";
+                        ret += escapeString(op.value2);
+                        ret += "\"];";
+                        ret += "if(v)r+=\" ";
+                        ret += escapeString(op.value1);
+                        ret += "=\\\"\";r+=v;r+=\"\\\"\";";
+                        break;
+                    default:
+                        break;
+                }
+            }
+            ret += "return r;}";
+            return ret;
+        }
+};
+
 std::string lastError;
 map<string, bool> singleTags;
 bool moduleInitialized = false;
@@ -44,91 +221,12 @@ class RenderedDocument {
         }
 };
 
-static void walkToHtml(Document& doc, int currentNodeId, RenderedDocument& rl) {
-    bool showTags = true;
-    Node& currentNode = doc.nodes[currentNodeId];
-
-    for(auto& item : currentNode.properties) {
-        if(item.first == "@invisible") {
-            if(item.second.type == fromString && item.second.ds == "true") return;
-            if(item.second.type == fromParam) {
-                auto itr = doc.params.find(item.second.ds);
-                if(itr != doc.params.end()) {
-                    if(itr -> second == "true") return;
-                }
-            }
-        } else if(item.first == "@if") {
-            if(item.second.type == fromParam) {
-                auto itr = doc.params.find(item.second.ds);
-                if(itr == doc.params.end()) return;
-                if(itr -> second != "true") return;
-            }
-        }
-    }
-
-    if(currentNode.key == "" || currentNode.key == "_") showTags = false;
-
-    bool isSingleTag = false;
-
-    if(singleTags.find(currentNode.key) != singleTags.end()) isSingleTag = true;
-
-    if(showTags) {
-        rl.push("<").push(currentNode.key);
-        for(auto& item : currentNode.properties) {
-            if(!item.first.empty() && item.first[0] == '@') continue;
-            if(item.second.type == fromString) {
-                rl.push(" ").push(item.first).push("=\"").push(item.second.ds).push("\"");
-            }
-            else if(item.second.type == fromParam) {
-                auto itr = doc.params.find(item.second.ds);
-                if(itr == doc.params.end()) continue;
-                rl.push(" ").push(item.first).push("=\"").push(itr -> second).push("\"");
-            }
-        }
-        if(isSingleTag) rl.push(" />");
-        else rl.push(">");
-    }
-
-    if(!isSingleTag) {
-        if(currentNode.content.type == fromString) {
-            rl.push(currentNode.content.ds);
-        } else if(currentNode.content.type == fromParam) {
-            auto itr = doc.params.find(currentNode.content.ds);
-            if(itr != doc.params.end()) rl.push(itr -> second);
-        }
-
-        for(auto& i : currentNode.children) {
-            walkToHtml(doc, i, rl);
-        }
-    }
-
-    if(!isSingleTag && showTags) rl.push("</").push(currentNode.key).push(">");
-}
-
-static string escapeString(const string& str) {
-    string result;
-    for(char ch : str) {
-        if(ch == '\r') continue;
-        if(ch == '\n') {
-            result += "\\n";
-            continue;
-        }
-        if(ch == '\"'
-        || ch == '\''
-        || ch == '\\') {
-            result += '\\';
-        }
-        result += ch;
-    }
-    return result;
-}
-
 /*static string escapeString(const char *str) {
     string s(str);
     return escapeString(s);
 }*/
 
-static void walkToJavascript(Document& doc, int currentNodeId, RenderedDocument& rl) {
+static void walkToFlow(Document& doc, int currentNodeId, RenderFlow& rf) {
     bool showTags = true;
     Node& currentNode = doc.nodes[currentNodeId];
 
@@ -157,62 +255,49 @@ static void walkToJavascript(Document& doc, int currentNodeId, RenderedDocument&
     if(singleTags.find(currentNode.key) != singleTags.end()) isSingleTag = true;
 
     if(showTags) {
-        rl.push("var pr={};");
+        rf.appendString("<");
+        rf.appendString(currentNode.key);
 
         for(auto& item : currentNode.properties) {
             if(!item.first.empty() && item.first[0] == '@') continue;
             if(item.second.type == fromString) {
-                rl.push("pr[\"")
-                .push(escapeString(item.first))
-                .push("\"]=\"")
-                .push(escapeString(item.second.ds))
-                .push("\";");
-            }
-            else if(item.second.type == fromParam) {
-                rl.push("pr[\"")
-                .push(escapeString(item.first))
-                .push("\"]=");
-
+                rf.appendPropertyFromString(item.first, item.second.ds);
+            } else if(item.second.type == fromParam) {
                 auto itr = doc.params.find(item.second.ds);
                 if(itr == doc.params.end()) {
-                    rl.push("p[\"")
-                    .push(escapeString(item.second.ds))
-                    .push("\"];");
-                    continue;
+                    rf.appendPropertyFromParam(item.first, item.second.ds);
+                } else {
+                    rf.appendPropertyFromString(item.first, itr -> second);
                 }
-                rl.push("\"")
-                .push(escapeString(itr -> second))
-                .push("\";");
             }
         }
 
-        rl.push("r+=\"<").push(escapeString(currentNode.key)).push("\";")
-        .push("for(var key in pr)if(pr[key])r+=\" \"+key+\"=\"+\"\\\"\"+pr[key]+\"\\\"\";");
-
-        if(isSingleTag) rl.push("r+=\" />\";");
-        else rl.push("r+=\">\";");
+        if(isSingleTag) rf.appendString(" />");
+        else rf.appendString(">");
     }
 
     if(!isSingleTag) {
         if(currentNode.content.type == fromString) {
-            rl.push("r+=\"").push(escapeString(currentNode.content.ds)).push("\";");
+            rf.appendString(currentNode.content.ds);
         } else if(currentNode.content.type == fromParam) {
             auto itr = doc.params.find(currentNode.content.ds);
-            if(itr != doc.params.end()) rl.push("r+=\"").push(escapeString(itr -> second)).push("\";");
-            else {
-                rl.push("var v=p[\"")
-                .push(escapeString(currentNode.content.ds))
-                .push("\"];")
-                .push("if(v)r+=v;");
+            if(itr == doc.params.end()) {
+                rf.appendParam(currentNode.content.ds);
+            } else {
+                rf.appendString(itr -> second);
             }
         }
 
         for(auto& i : currentNode.children) {
-            walkToJavascript(doc, i, rl);
+            walkToFlow(doc, i, rf);
         }
     }
 
-    if(!isSingleTag && showTags) rl.push("r+=\"</").push(escapeString(currentNode.key)).push(">\";");
+    if(!isSingleTag && showTags) {
+        rf.appendString("</");
+        rf.appendString(currentNode.key);
+        rf.appendString(">");
+    }
 }
 
 extern "C" Document * loadDocument(const char *filename) {
@@ -270,14 +355,10 @@ extern "C" void clearDocumentParams(Document *doc) {
 extern "C" char * renderToHtml(Document *doc, bool isWholePage) {
     if(doc == NULL) return NULL;
 
-    RenderedDocument rl;
-    if(isWholePage) rl.push("<!DOCTYPE html><html>");
+    RenderFlow rf;
+    walkToFlow(*doc, 0, rf);
 
-    walkToHtml(*doc, 0, rl);
-
-    if(isWholePage) rl.push("</html>");
-
-    string result = rl.str();
+    string result = rf.generateHTML();
 
     char *result_c = new char [result.size() + 1];
     result_c[result.size()] = 0;
@@ -290,17 +371,11 @@ extern "C" char * renderToHtml(Document *doc, bool isWholePage) {
 extern "C" char * generateJavascriptRenderer(Document *doc, bool isWholePage) {
     if(doc == NULL) return NULL;
 
-    RenderedDocument rl;
-    rl.push("function(p){")
-    .push("var r=\"\";")
-    .push("if(!p)p={};");
+    RenderFlow rf;
+    walkToFlow(*doc, 0, rf);
+    rf.optimize();
 
-    walkToJavascript(*doc, 0, rl);
-
-    rl.push("return r;")
-    .push("}");
-
-    string result = rl.str();
+    string result = rf.generateScript();
 
     char *result_c = new char [result.size() + 1];
     result_c[result.size()] = 0;

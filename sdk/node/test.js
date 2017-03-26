@@ -1,11 +1,15 @@
 const OMRenderer = require("./OxygenMarkRenderer");
 
-const cxt = new OMRenderer();
+const ctx = new OMRenderer();
 
-cxt.loadFile("./test.omt", {
-    "text1": "Hello node"
+ctx.loadFile("./test.omt", {
+    "text1": "Hello node",
+	"id1": "id-1"
 });
-console.log(cxt.render());
-cxt.clearParams();
-console.log(cxt.prepare().toString());
-cxt.destroy();
+console.log(ctx.render());
+let renderer = ctx.prepare();
+console.log(renderer.toString());
+console.log(renderer({
+	"id2": "id-2"
+}));
+ctx.destroy();

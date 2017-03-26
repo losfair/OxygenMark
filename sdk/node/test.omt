@@ -1,1 +1,3 @@
-p => [text1]
+p id="test-id" => [text1]
+p id=[id1] => [text1]
+p id=[id2] => [text1]
