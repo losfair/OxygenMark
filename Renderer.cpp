@@ -257,6 +257,12 @@ class RenderFlow {
             return ret;
         }
 
+        string toReactPropertyName(const string& s) {
+            if(s == "class") return "className";
+            else if(s == "for") return "htmlFor";
+            else return s;
+        }
+
         string generateReactScript() {
             optimize();
 
@@ -295,14 +301,14 @@ class RenderFlow {
                         break;
                     case OP_TYPE_APPEND_PROPERTY_FROM_STRING:
                         ret += "\"";
-                        ret += escapeString(op.value1);
+                        ret += escapeString(toReactPropertyName(op.value1));
                         ret += "\":\"";
                         ret += escapeString(op.value2);
                         ret += "\",";
                         break;
                     case OP_TYPE_APPEND_PROPERTY_FROM_PARAM:
                         ret += "\"";
-                        ret += escapeString(op.value1);
+                        ret += escapeString(toReactPropertyName(op.value1));
                         ret += "\":";
                         ret += "(function(){var v=p[\"";
                         ret += escapeString(op.value2);
