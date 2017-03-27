@@ -11,12 +11,17 @@
 using namespace std;
 using namespace OxygenMark;
 
+map<string, bool> singleTags;
+
 enum OpType {
     OP_TYPE_UNKNOWN,
     OP_TYPE_APPEND_STRING,
     OP_TYPE_APPEND_PARAM,
     OP_TYPE_APPEND_PROPERTY_FROM_STRING,
-    OP_TYPE_APPEND_PROPERTY_FROM_PARAM
+    OP_TYPE_APPEND_PROPERTY_FROM_PARAM,
+    OP_TYPE_OPEN_TAG_BEGIN,
+    OP_TYPE_OPEN_TAG_END,
+    OP_TYPE_CLOSE_TAG
 };
 
 static string escapeString(const string& str) {
@@ -42,6 +47,9 @@ struct RenderFlow_Operation {
     string value1, value2;
     RenderFlow_Operation() {
         type = OP_TYPE_UNKNOWN;
+    }
+    RenderFlow_Operation(OpType _type) {
+        type = _type;
     }
     RenderFlow_Operation(OpType _type, const string& _value1) {
         type = _type;
@@ -72,6 +80,18 @@ class RenderFlow {
 
         void appendPropertyFromParam(const string& propertyName, const string& k) {
             ops.push_back(RenderFlow_Operation(OP_TYPE_APPEND_PROPERTY_FROM_PARAM, propertyName, k));
+        }
+
+        void openTagBegin(const string& tagName) {
+            ops.push_back(RenderFlow_Operation(OP_TYPE_OPEN_TAG_BEGIN, tagName));
+        }
+
+        void openTagEnd() {
+            ops.push_back(RenderFlow_Operation(OP_TYPE_OPEN_TAG_END));
+        }
+
+        void closeTag(const string& tagName) {
+            ops.push_back(RenderFlow_Operation(OP_TYPE_CLOSE_TAG, tagName));
         }
 
         void optimize() {
@@ -125,7 +145,54 @@ class RenderFlow {
             ops = optimizedOps;
         }
 
+        void tagsToString() {
+            list<RenderFlow_Operation> resultOps;
+            bool isSingleTag = false;
+
+            for(auto& op : ops) {
+                switch(op.type) {
+                    case OP_TYPE_OPEN_TAG_BEGIN: {
+                        string s;
+                        s = "<";
+                        s += op.value1;
+                        resultOps.push_back(RenderFlow_Operation(OP_TYPE_APPEND_STRING, s));
+                        isSingleTag = singleTags[op.value1];
+                    }
+                    break;
+
+                    case OP_TYPE_OPEN_TAG_END: {
+                        string s;
+                        if(isSingleTag) {
+                            s = " />";
+                        } else {
+                            s = ">";
+                        }
+                        resultOps.push_back(RenderFlow_Operation(OP_TYPE_APPEND_STRING, s));
+                    }
+                    break;
+
+                    case OP_TYPE_CLOSE_TAG: {
+                        string s;
+                        s = "</";
+                        s += op.value1;
+                        s += ">";
+                        resultOps.push_back(RenderFlow_Operation(OP_TYPE_APPEND_STRING, s));
+                    }
+                    break;
+
+                    default:
+                        resultOps.push_back(op);
+                        break;
+                }
+            }
+
+            ops = resultOps;
+        }
+
         string generateHTML() {
+            tagsToString();
+            optimize();
+
             string ret;
             for(auto& op : ops) {
                 switch(op.type) {
@@ -149,6 +216,9 @@ class RenderFlow {
         }
 
         string generateScript() {
+            tagsToString();
+            optimize();
+
             string ret;
             ret = "function(p){var r=\"\";if(!p)p={};";
             for(auto& op : ops) {
@@ -189,7 +259,6 @@ class RenderFlow {
 };
 
 std::string lastError;
-map<string, bool> singleTags;
 bool moduleInitialized = false;
 
 static void tryModuleInit() {
@@ -221,11 +290,6 @@ class RenderedDocument {
         }
 };
 
-/*static string escapeString(const char *str) {
-    string s(str);
-    return escapeString(s);
-}*/
-
 static void walkToFlow(Document& doc, int currentNodeId, RenderFlow& rf) {
     bool showTags = true;
     Node& currentNode = doc.nodes[currentNodeId];
@@ -250,13 +314,10 @@ static void walkToFlow(Document& doc, int currentNodeId, RenderFlow& rf) {
 
     if(currentNode.key == "" || currentNode.key == "_") showTags = false;
 
-    bool isSingleTag = false;
-
-    if(singleTags.find(currentNode.key) != singleTags.end()) isSingleTag = true;
+    bool isSingleTag = singleTags[currentNode.key];
 
     if(showTags) {
-        rf.appendString("<");
-        rf.appendString(currentNode.key);
+        rf.openTagBegin(currentNode.key);
 
         for(auto& item : currentNode.properties) {
             if(!item.first.empty() && item.first[0] == '@') continue;
@@ -272,8 +333,7 @@ static void walkToFlow(Document& doc, int currentNodeId, RenderFlow& rf) {
             }
         }
 
-        if(isSingleTag) rf.appendString(" />");
-        else rf.appendString(">");
+        rf.openTagEnd();
     }
 
     if(!isSingleTag) {
@@ -291,12 +351,10 @@ static void walkToFlow(Document& doc, int currentNodeId, RenderFlow& rf) {
         for(auto& i : currentNode.children) {
             walkToFlow(doc, i, rf);
         }
-    }
 
-    if(!isSingleTag && showTags) {
-        rf.appendString("</");
-        rf.appendString(currentNode.key);
-        rf.appendString(">");
+        if(showTags) {
+            rf.closeTag(currentNode.key);
+        }
     }
 }
 
@@ -373,7 +431,6 @@ extern "C" char * generateJavascriptRenderer(Document *doc, bool isWholePage) {
 
     RenderFlow rf;
     walkToFlow(*doc, 0, rf);
-    rf.optimize();
 
     string result = rf.generateScript();
 
