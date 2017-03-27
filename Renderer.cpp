@@ -101,7 +101,7 @@ class RenderFlow {
 
             ops.push_back(RenderFlow_Operation());
 
-            for(auto& op : ops) {
+            /*for(auto& op : ops) {
                 if(op.type == OP_TYPE_APPEND_PROPERTY_FROM_STRING) {
                     string buf;
                     buf = " ";
@@ -116,7 +116,7 @@ class RenderFlow {
             }
 
             ops = optimizedOps;
-            optimizedOps.clear();
+            optimizedOps.clear();*/
             
             for(auto& op : ops) {
                 if(wasAppendString && op.type != OP_TYPE_APPEND_STRING) {
@@ -254,6 +254,67 @@ class RenderFlow {
                 }
             }
             ret += "return r;}";
+            return ret;
+        }
+
+        string generateReactScript() {
+            optimize();
+
+            bool isSingleTag = false;
+
+            string ret = "function(p){if(!p)p={};var c=React.createElement;var r=c(\"div\",null,";
+            for(auto& op : ops) {
+                switch(op.type) {
+                    case OP_TYPE_APPEND_STRING:
+                        ret += "\"";
+                        ret += escapeString(op.value1);
+                        ret += "\",";
+                        break;
+                    case OP_TYPE_APPEND_PARAM:
+                        ret += "(function(){var v=p[\"";
+                        ret += escapeString(op.value1);
+                        ret += "\"];";
+                        ret += "if(v)return v;else return \"\";";
+                        ret += "})(),";
+                        break;
+                    case OP_TYPE_OPEN_TAG_BEGIN:
+                        ret += "c(\"";
+                        ret += escapeString(op.value1);
+                        ret += "\",{";
+                        isSingleTag = singleTags[op.value1];
+                        break;
+                    case OP_TYPE_OPEN_TAG_END:
+                        if(isSingleTag) {
+                            ret += "},null),";
+                        } else {
+                            ret += "},...[";
+                        }
+                        break;
+                    case OP_TYPE_CLOSE_TAG:
+                        ret += "]),";
+                        break;
+                    case OP_TYPE_APPEND_PROPERTY_FROM_STRING:
+                        ret += "\"";
+                        ret += escapeString(op.value1);
+                        ret += "\":\"";
+                        ret += escapeString(op.value2);
+                        ret += "\",";
+                        break;
+                    case OP_TYPE_APPEND_PROPERTY_FROM_PARAM:
+                        ret += "\"";
+                        ret += escapeString(op.value1);
+                        ret += "\":";
+                        ret += "(function(){var v=p[\"";
+                        ret += escapeString(op.value2);
+                        ret += "\"];";
+                        ret += "if(v)return v;else return \"\";";
+                        ret += "})(),";
+                        break;
+                    default:
+                        break;
+                }
+            }
+            ret += ");return r;}";
             return ret;
         }
 };
@@ -433,6 +494,22 @@ extern "C" char * generateJavascriptRenderer(Document *doc, bool isWholePage) {
     walkToFlow(*doc, 0, rf);
 
     string result = rf.generateScript();
+
+    char *result_c = new char [result.size() + 1];
+    result_c[result.size()] = 0;
+
+    strcpy(result_c, result.c_str());
+
+    return result_c;
+}
+
+extern "C" char * generateReactRenderer(Document *doc) {
+    if(doc == NULL) return NULL;
+
+    RenderFlow rf;
+    walkToFlow(*doc, 0, rf);
+
+    string result = rf.generateReactScript();
 
     char *result_c = new char [result.size() + 1];
     result_c[result.size()] = 0;

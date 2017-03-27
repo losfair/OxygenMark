@@ -62,6 +62,18 @@ function OxygenMarkRenderer() {
         eval("var renderer = " + generated);
         return renderer;
     }
+    this.prepareReactRaw = () => {
+        if(!this.docContext) {
+            throw "Not initialized";
+        }
+        return OxygenMark.generateRenderer(this.docContext, false, "react");
+    }
+    this.prepareReact = () => {
+        var generated = this.prepareReactRaw();
+        if(!generated) return null;
+        eval("var renderer = " + generated);
+        return renderer;
+    }
 }
 
 module.exports = OxygenMarkRenderer;

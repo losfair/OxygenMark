@@ -13,6 +13,7 @@ extern "C" void setDocumentParam(OxygenMark::Document *doc, const char *key, con
 extern "C" void clearDocumentParams(OxygenMark::Document *doc);
 extern "C" char * renderToHtml(OxygenMark::Document *doc, bool isWholePage);
 extern "C" char * generateJavascriptRenderer(OxygenMark::Document *doc, bool isWholePage);
+extern "C" char * generateReactRenderer(OxygenMark::Document *doc);
 extern "C" void destroyDocument(OxygenMark::Document *doc);
 extern "C" const char * getLastError();
 
@@ -120,13 +121,23 @@ static void onGenerateRenderer(const FunctionCallbackInfo<Value>& args) {
         return;
     }
 
+    string rendererType;
+    if(args.Length() >= 3) {
+        rendererType = *String::Utf8Value(args[2] -> ToString());
+    }
+
     OxygenMark::Document *doc = itr -> second;
     
     bool isWholePage = true;
 
     if(args.Length() >= 2 && args[1] -> NumberValue() == 0) isWholePage = false;
 
-    char *result = generateJavascriptRenderer(doc, isWholePage);
+    char *result = NULL;
+    if(rendererType == "react") {
+        result = generateReactRenderer(doc);
+    } else {
+        result = generateJavascriptRenderer(doc, isWholePage);
+    }
 
     if(result == NULL) {
         isolate -> ThrowException(String::NewFromUtf8(isolate, "Unable to generate renderer"));

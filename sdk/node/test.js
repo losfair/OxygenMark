@@ -12,4 +12,5 @@ console.log(renderer.toString());
 console.log(renderer({
 	"id2": "id-2"
 }));
+console.log(ctx.prepareReactRaw());
 ctx.destroy();
