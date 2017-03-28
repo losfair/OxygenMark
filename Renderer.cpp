@@ -268,7 +268,7 @@ class RenderFlow {
 
             bool isSingleTag = false;
 
-            string ret = "function(p){if(!p)p={};var c=React.createElement;var r=c(\"div\",null,";
+            string ret = "function(p,ce){if(!p)p={};var c;if(ce)c=ce;else c=React.createElement;var r=c(\"div\",null,";
             for(auto& op : ops) {
                 switch(op.type) {
                     case OP_TYPE_APPEND_STRING:

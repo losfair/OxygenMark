@@ -62,11 +62,38 @@ function OxygenMarkRenderer() {
         eval("var renderer = " + generated);
         return renderer;
     }
-    this.prepareReactRaw = () => {
+    this.prepareReactRaw = (full) => {
         if(!this.docContext) {
             throw "Not initialized";
         }
-        return OxygenMark.generateRenderer(this.docContext, false, "react");
+        let code = OxygenMark.generateRenderer(this.docContext, false, "react");
+        if(full) {
+            return `
+import React from "react";
+const _r = ${code};
+
+let components = {};
+
+export function registerComponent(name, component) {
+    components[name] = component;
+}
+
+export function render(params) {
+    if(!params["true"]) params["true"] = true;
+    if(!params["false"]) params["false"] = false;
+    
+    return _r(params, function() {
+        if(typeof(arguments[0]) == "string") {
+            if(components[arguments[0]]) {
+                arguments[0] = components[arguments[0]];
+            }
+        }
+        return React.createElement(...arguments);
+    });
+}`.trim();
+        } else {
+            return code;
+        }
     }
     this.prepareReact = () => {
         var generated = this.prepareReactRaw();
