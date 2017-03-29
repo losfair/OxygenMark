@@ -119,6 +119,10 @@ namespace OxygenMark {
 
             row = row.substr(indent);
 
+            if(!row.size() || row[0] == '#') {
+                continue;
+            }
+
             bool inIdentifier = false;
             bool inString = false;
             bool isEscaped = false;
