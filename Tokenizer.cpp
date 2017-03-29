@@ -42,7 +42,7 @@ static inline bool charIsInRange(char ch, char start, char end) {
     return false;
 }
 
-static inline bool isValidIdentifierChar(char ch) {
+static inline bool isIdentifierChar(char ch) {
     if(charIsInRange(ch, 'a', 'z')
     || charIsInRange(ch, 'A', 'Z')
     || charIsInRange(ch, '0', '9')
@@ -107,77 +107,84 @@ namespace OxygenMark {
     }
 
     Tokenizer::Tokenizer(std::string& doc) {
-        std::list<std::string> rawRows;
-        splitToRows(doc, rawRows);
+        std::list<std::string> rows;
+        splitToRows(doc, rows);
 
-        for(auto& currentRawRow : rawRows) {
-            Row newRow;
+        for(auto& row : rows) {
+            row += " ";
 
-            int currentIndent = countIndent(currentRawRow);
-            newRow.tokens.push_back(Token::createFromIndent(currentIndent));
+            Row rowInfo;
+            int indent = countIndent(row);
+            rowInfo.tokens.push_back(Token::createFromIndent(indent));
 
-            currentRawRow = currentRawRow.substr(currentIndent);
-            const char *currentRawRowC = currentRawRow.c_str();
-            int currentRawRowSize = currentRawRow.size();
-            int currentPos = 0;
-            char charBuf[2] = {0, 0};
+            row = row.substr(indent);
 
-            while(currentPos < currentRawRowSize) {
-                if(isValidIdentifierChar(currentRawRowC[currentPos])) { // identifier
-                    std::string currentIdentifier;
-                    while(currentPos < currentRawRowSize && isValidIdentifierChar(currentRawRowC[currentPos])) {
-                        charBuf[0] = currentRawRowC[currentPos];
-                        currentIdentifier += charBuf;
-                        currentPos++;
-                    }
-                    newRow.tokens.push_back(Token::createFromIdentifier(currentIdentifier));
-                } else if(currentRawRowC[currentPos] == '\"') { // string
-                    std::string currentString;
-                    currentPos++;
-                    while(currentPos < currentRawRowSize && currentRawRowC[currentPos] != '\"') {
-                        charBuf[0] = currentRawRowC[currentPos];
-                        currentString += charBuf;
-                        currentPos++;
-                    }
-                    if(currentPos > currentRawRowSize) {
-                        throw std::runtime_error("Tokenizing failed: Cannot find the end of string");
-                    }
-                    currentPos++;
-                    newRow.tokens.push_back(Token::createFromString(currentString));
-                } else if(currentRawRowC[currentPos] == '[') { // param
-                    std::string currentParam;
-                    currentPos++;
-                    while(currentPos < currentRawRowSize && currentRawRowC[currentPos] != ']') {
-                        charBuf[0] = currentRawRowC[currentPos];
-                        currentParam += charBuf;
-                        currentPos++;
-                    }
-                    if(currentPos > currentRawRowSize) {
-                        throw std::runtime_error("Tokenizing failed: Cannot find the end of param");
-                    }
-                    currentPos++;
-                    newRow.tokens.push_back(Token::createFromParam(currentParam));
-                } else if(isSpaceLikeChar(currentRawRow[currentPos])) { // space
-                    currentPos++;
-                    continue;
-                } else if(currentRawRowC[currentPos] == '=') {
-                    currentPos++;
-                    if(currentPos == currentRawRowSize) {
-                        throw std::runtime_error("Tokenizing failed: rvalue expected");
-                    }
-                    if(currentRawRowC[currentPos] == '>') {
-                        currentPos++;
-                        newRow.tokens.push_back(Token::createFromDelimiter(KEY_DATASRC_DELIMITER));
+            bool inIdentifier = false;
+            bool inString = false;
+            bool isEscaped = false;
+            bool isParam = false;
+            bool maybeAssignment = false;
+            std::string token;
+
+            for(char ch : row) {
+                if(inString) {
+                    char endOfString = isParam ? ']' : '\"';
+                    if(!isEscaped && ch == endOfString) {
+                        inString = false;
+                        rowInfo.tokens.push_back(Token::createFromString(token));
                     } else {
-                        newRow.tokens.push_back(Token::createFromDelimiter(PROP_DATASRC_DELIMITER));
+                        if(ch == '\\' && !isEscaped) {
+                            isEscaped = true;
+                        } else {
+                            isEscaped = false;
+                            token += ch;
+                        }
                     }
-                } else { // unknown
-                    charBuf[0] = currentRawRowC[currentPos];
-                    throw std::runtime_error((std::string) "Tokenizing failed: Unknown token: " + (std::string) charBuf);
+                    continue;
                 }
+
+                if(maybeAssignment) {
+                    maybeAssignment = false;
+                    if(ch == '>') {
+                        rowInfo.tokens.push_back(Token::createFromDelimiter(KEY_DATASRC_DELIMITER));
+                        continue;
+                    } else {
+                        rowInfo.tokens.push_back(Token::createFromDelimiter(PROP_DATASRC_DELIMITER));
+                    }
+                }
+
+                if(ch == '\"' || ch == '[') {
+                    inString = true;
+                    isParam = (ch == '[');
+                    token = "";
+                    continue;
+                }
+
+                if(isIdentifierChar(ch)) {
+                    if(!inIdentifier) {
+                        token = "";
+                        inIdentifier = true;
+                    }
+                    token += ch;
+                    continue;
+                }
+                if(inIdentifier) {
+                    inIdentifier = false;
+                    rowInfo.tokens.push_back(Token::createFromIdentifier(token));
+                }
+                if(ch == '=') {
+                    maybeAssignment = true;
+                    continue;
+                }
+
+                if(isSpaceLikeChar(ch)) {
+                    continue;
+                }
+
+                throw std::runtime_error((std::string) "Unknown token: " + ch);
             }
 
-            rows.push_back(newRow);
+            this -> rows.push_back(rowInfo);
         }
     }
 }
