@@ -132,7 +132,11 @@ namespace OxygenMark {
                     char endOfString = isParam ? ']' : '\"';
                     if(!isEscaped && ch == endOfString) {
                         inString = false;
-                        rowInfo.tokens.push_back(Token::createFromString(token));
+                        if(isParam) {
+                            rowInfo.tokens.push_back(Token::createFromParam(token));
+                        } else {
+                            rowInfo.tokens.push_back(Token::createFromString(token));
+                        }
                     } else {
                         if(ch == '\\' && !isEscaped) {
                             isEscaped = true;
