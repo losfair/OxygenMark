@@ -119,15 +119,12 @@ namespace OxygenMark {
 
             row = row.substr(indent);
 
-            if(!row.size() || row[0] == '#') {
-                continue;
-            }
-
             bool inIdentifier = false;
             bool inString = false;
             bool isEscaped = false;
             bool isParam = false;
             bool maybeAssignment = false;
+            bool maybeComment = false;
             std::string token;
 
             for(char ch : row) {
@@ -155,6 +152,16 @@ namespace OxygenMark {
                     } else {
                         rowInfo.tokens.push_back(Token::createFromDelimiter(PROP_DATASRC_DELIMITER));
                     }
+                }
+
+                if(ch == '/') {
+                    if(maybeComment) {
+                        break;
+                    }
+                    maybeComment = true;
+                    continue;
+                } else {
+                    maybeComment = false;
                 }
 
                 if(ch == '\"' || ch == '[') {
@@ -188,7 +195,9 @@ namespace OxygenMark {
                 throw std::runtime_error((std::string) "Unknown token: " + ch);
             }
 
-            this -> rows.push_back(rowInfo);
+            if(rowInfo.tokens.size() > 1) { // the current row has something else than indent
+                this -> rows.push_back(rowInfo);
+            }
         }
     }
 }

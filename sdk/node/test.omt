@@ -1,4 +1,4 @@
-# Test Template
+// Test Template
 p id="test-id" => [text1]
 br
 p id=[id1] => [text1]
